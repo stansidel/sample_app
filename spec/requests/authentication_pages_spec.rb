@@ -4,6 +4,15 @@ describe "Authentication" do
 
   subject { page }
 
+  describe "when not signed in" do
+    before { visit root_path }
+
+    it { should_not have_link('Settings') }
+    it { should_not have_link('Profile') }
+    it { should_not have_link('Sign out') }
+    it { should_not have_link('Users') }
+  end
+
   describe "signin" do
     before { visit signin_path }
 
@@ -62,6 +71,17 @@ describe "Authentication" do
           it "should render the desired protected page" do
             page.should have_selector('title', text: 'Edit user')
           end
+
+          describe "when signing in again" do
+            before do
+              delete signout_path
+              valid_signin user
+            end
+
+            it "should render the default (profile) page" do
+              page.should have_selector('title', text: user.name)
+            end
+          end
         end
       end
 
@@ -109,6 +129,18 @@ describe "Authentication" do
 
       describe "submitting a DELETE request to the Users#destroy action" do
         before { delete user_path(user) }
+        specify { response.should redirect_to(root_path) }
+      end
+    end
+
+    describe "as admin user" do
+      let(:admin_user) { FactoryGirl.create(:admin) }
+      let(:user) { FactoryGirl.create(:user) }
+
+      before { valid_signin admin_user }
+
+      describe "submitting a DELETE request for itself" do
+        before { delete user_path(admin_user) }
         specify { response.should redirect_to(root_path) }
       end
     end
